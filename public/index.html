@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+
+  <title>QCS Whole Array</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+  <script src="knockout-3.5.1.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout-validation/2.0.4/knockout.validation.min.js"
+    integrity="sha512-b99MDNv5TqiZtPKH2UeHzDAVydmgrOJEPtaPPEF8AgV86eYyqINFI/K7/7f0+R4WNTAVv8KvvpjwfOYHv5rd5g=="
+    crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+  <script src="./src/teechart.js" type="text/javascript"></script>
+  <script src="./src/teechart-extras.js" type="text/javascript"></script>
+  <script type="text/javascript" src="bootstrap.min.js"></script>
+  <!-- Bootstrap -->
+  <link href="bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/11.0.2/css/bootstrap-slider.min.css"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+  <link rel="stylesheet" href="chart.css" />
+</head>
+
+<body>
+  <div class="container" role="main">
+    <div class="page-title">
+      <div class="title_left">
+        <h3>Profile Control</h3>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-heading clearfix">
+        <div class="float-left" style="display: inline-block; margin-right: 15px;">
+          <div id="seriesButtonContainer" data-bind="foreach: seriesConfig" class="seriesbutton">
+            <div data-bind="click: $parent.onSeriesClick, 
+                         css: enabled() ? 'btn-active' : 'btn-inactive', 
+                         visible: visible" class="scanner-tab series-btn">
+              <span class="tab-indicator" data-bind="text: indicator"></span>
+              <span class="tab-text">
+                Series <span data-bind="text: id"></span>:
+                <span data-bind="text: enabled() ? 'Enabled' : 'Disabled'"></span>
+              </span>
+              <span data-bind="css: enabled() ? 'tab-status-indicator active' : 'tab-status-indicator inactive'"></span>
+              <span class="tab-close"
+                data-bind="click: function(data, event) { event.stopPropagation(); $parent.cancelSeries(data); }">
+                ×
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="float-right" style="display: inline-block;">
+          <button class="btn btn-transperent" data-bind="click:$root.stop">Stop</button>
+
+          <div class="dropdown" style="display: inline-block; margin-left: 5px;">
+            <button class="btn btn-transperent dropdown-toggle" type="button" id="chartDropdown" data-toggle="dropdown"
+              aria-haspopup="true" aria-expanded="false">
+              <span class="fa-solid fa-chart-simple" aria-hidden="true"></span>
+              <span class="caret"></span>
+            </button>
+
+            <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="chartDropdown"
+              data-bind="foreach: $root.visibleSeries" style="max-height: 150px; overflow-y: auto;">
+              <li>
+                <label style="display: block; padding: 3px 10px; margin: 0; white-space: nowrap;">
+                  <input type="checkbox" data-bind="event:{ change: $root.onFreezClick}, css: 'btnActive'"
+                    style="margin-right: 5px;" />
+                  <span data-bind="text: name,style: { color: id == 1 ? 'orange' : 'green' }"></span>
+                </label>
+              </li>
+            </ul>
+          </div>
+
+          <button type="button" class="btn btn-transperent" style="margin-left: 5px;"
+            data-bind="click: $root.onTableIconClick, css : {'btnActive' : onTableIconActive}, enable : visibleSeries().length != 0">
+            <span class="fa fa-table" aria-hidden="true"></span>
+          </button>
+
+          <button type="button" class="btn btn-transperent" style="margin-left: 5px;"
+            data-bind="click: $root.onExpandIonClick, css : {'btnActive' : onExpandIconActive}, enable : visibleSeries().length != 0">
+            <span class="fa fa-expand" aria-hidden="true"></span>
+          </button>
+
+          <button type="button" class="btn btn-light btn-transperent" style="margin-left: 5px;"
+            data-bind="click: toggleZoomSlider, css : {'btnActive' : showZoomSlider} , enable: zoomEnabled"">
+            <span class=" fa fa-search-plus" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <div class="tooltip-navigation" style="display: none; text-align: center; margin-top: 10px; clear: both;">
+          <button class="tooltip-nav-button" data-bind="click: navigatePreviousPoint, disable: prevPointDisabled">
+            <i class="fa fa-arrow-left"></i>
+          </button>
+          <span data-bind="text: 'Point ' + (currentPointIndex() + 1) + ' of ' + totalPoints()"></span>
+          <button class="tooltip-nav-button" data-bind="click: navigateNextPoint, disable: nextPointDisabled">
+            <i class="fa fa-arrow-right"></i>
+          </button>
+        </div>
+
+        <div class="slider-container" style="clear: both; padding-top: 10px; width: 100%;"
+          data-bind="visible: showZoomSlider">
+          <input id="rangeSlider" type="text" style="width: 100%;" />
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="row">
+          <div data-bind="attr: { 'class': chartClass }">
+            <canvas id="chartCanvas"></canvas>
+          </div>
+          <div data-bind="attr: { 'class': tableClass }">
+            <div data-bind="if: $root.onTableShow">
+              <table class="table table-bordered table-dark">
+                <tbody data-bind="foreach: $root.statisticsComputedData()">
+                  <tr data-bind="if: $root.seriesCount() == 1">
+                    <td style="font-weight: 400;" data-bind="text: header"></td>
+                    <td style="font-weight: 600;" data-bind="text: series1"></td>
+                  </tr>
+                  <tr data-bind="if: $root.seriesCount() > 1">
+                    <td style="font-weight: 400;" data-bind="text: header"></td>
+                    <td style="font-weight: 600;" data-bind="text: series1"></td>
+                    <td style="font-weight: 600;" data-bind=" text: series2"></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div data-bind="if: $root.yaxisSettingShow">
+              <div data-bind="template: { name: 'yaxis-template' }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="utils.js" type="text/javascript"></script>
+  <script src="data.js" type="text/javascript"></script>
+  <script src="chart.js" type="text/javascript"></script>
+
+
+  <script type="text/html" id="yaxis-template">
+  <form data-bind="submit:yaxiSubmit">
+    <div class="row">
+      <div class="col-md-12">
+        <select class="col-md-12 selectBox"
+          data-bind="options:$root.visibleSeries, optionsText: 'name', value: selectedseries,event:{ change: selectedYaxisSeriesChange}"></select>
+      </div>
+      <div class="col-md-12 formField">
+        <select class="col-md-12 selectBox"
+          data-bind="options:$root.yaxisScaleList, optionsText: 'name', value: selectedYaxisScale,  event:{ change: selectedYaxisScaleChange}"></select>
+     </div>
+      <div class="col-md-12">
+        <label for="usr">Min</label>
+        <input type="number" class="form-control inputBox" id="min"
+          data-bind="value: min, enable: yaxiFieldsDisabled()">
+        <span class="validationMessage"
+          data-bind="validationMessage: min, visible:min.isModified() && !min.isValid()"></span>
+      </div>
+      <div class="col-md-12">
+        <label for="max">Max</label>
+        <input type="number" class="form-control inputBox" id="max"
+          data-bind="value: max, enable: yaxiFieldsDisabled()">
+        <span class="validationMessage"
+          data-bind="validationMessage: max, visible: max.isModified() && !max.isValid()"></span>
+      </div>
+      <div class="col-md-12">
+        <label for="range">Range </label>
+        <input type="number" class="form-control inputBox" id="range"
+          data-bind="value: range, enable: yaxisRangeFieldDisabled()" required>
+        <span data-bind="validationMessage: range, visible:showRangeErrors()"></span>
+      </div>
+    </div>
+
+    <div class="row formField" style="text-align: center;">
+      <button type="submit" class="btn btn-primary" data-bind="enable : canYaxisSave()">Apply</button>
+    </div>
+  </form>
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/11.0.2/bootstrap-slider.min.js"></script>
+</body>
+
+</html>
