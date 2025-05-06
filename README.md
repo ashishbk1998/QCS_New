@@ -1,313 +1,547 @@
-/**
- * Vanilla Range Slider - IE11 Compatible
- * A lightweight, customizable slider implementation with no dependencies
- */
-
-// Define VanillaRangeSlider in the global scope
-window.VanillaRangeSlider = function(element, options) {
-  options = options || {};
-  
-  // Default options
-  this.options = {
-    min: typeof options.min !== 'undefined' ? options.min : 0,
-    max: typeof options.max !== 'undefined' ? options.max : 100,
-    step: typeof options.step !== 'undefined' ? options.step : 1,
-    onChange: typeof options.onChange === 'function' ? options.onChange : function() {},
-    onSlideEnd: typeof options.onSlideEnd === 'function' ? options.onSlideEnd : function() {}
-  };
-  
-  // Handle the values property separately to ensure we have valid defaults
-  var defaultMin = this.options.min;
-  var defaultMax = this.options.max;
-  this.options.values = options.values || [defaultMin, defaultMax];
-
-  // Elements
-  this.element = element;
-  this.track = element.querySelector('.range-track');
-  this.fill = element.querySelector('.range-track-fill');
-  this.handles = {
-    left: element.querySelector('.range-handle-left'),
-    right: element.querySelector('.range-handle-right')
-  };
-  this.tooltips = {
-    left: element.querySelector('.range-tooltip-left'),
-    right: element.querySelector('.range-tooltip-right')
-  };
-
-  // State
-  this.activeHandle = null;
-  this.values = [
-    this.options.values[0],
-    this.options.values[1]
-  ];
-  this.trackWidth = this.track.offsetWidth;
-  
-  // Initialize
-  this.init();
-};
-
-// Prototype methods
-window.VanillaRangeSlider.prototype = {
-  init: function() {
-    // Set initial positions
-    this.updatePositions();
-    
-    // Event listeners
-    this.addEventListeners();
-    
-    // Update handle positions on window resize
-    var self = this;
-    window.addEventListener('resize', function() {
-      self.trackWidth = self.track.offsetWidth;
-      self.updatePositions();
-    });
-  },
-
-  addEventListeners: function() {
-    var self = this;
-    
-    // Handle mouse/touch events for both handles
-    function handleMouseDown(e, handle) {
-      if (e.preventDefault) {
-        e.preventDefault();
-      } else {
-        e.returnValue = false; // For IE
-      }
-      
-      self.activeHandle = handle;
-      self.handles[handle].classList.add('active');
-      
-      document.addEventListener('mousemove', self.handleMouseMove);
-      document.addEventListener('touchmove', self.handleMouseMove);
-      document.addEventListener('mouseup', self.handleMouseUp);
-      document.addEventListener('touchend', self.handleMouseUp);
-    }
-
-    // For IE11 compatibility - need to use function reference
-    function leftHandleMouseDown(e) {
-      handleMouseDown(e, 'left');
-    }
-    
-    function rightHandleMouseDown(e) {
-      handleMouseDown(e, 'right');
-    }
-
-    this.handles.left.addEventListener('mousedown', leftHandleMouseDown);
-    this.handles.left.addEventListener('touchstart', leftHandleMouseDown);
-    this.handles.right.addEventListener('mousedown', rightHandleMouseDown);
-    this.handles.right.addEventListener('touchstart', rightHandleMouseDown);
-
-    // Bind methods to this instance
-    var self = this;
-    this.handleMouseMove = function(e) {
-      if (!self.activeHandle) return;
-      
-      if (e.preventDefault) {
-        e.preventDefault();
-      } else {
-        e.returnValue = false; // For IE
-      }
-      
-      var rect = self.track.getBoundingClientRect();
-      var clientX = e.clientX;
-      if (!clientX && e.touches && e.touches.length) {
-        clientX = e.touches[0].clientX;
-      }
-      
-      var x = clientX - rect.left;
-      
-      // Constrain to track boundaries
-      x = Math.max(0, Math.min(x, self.trackWidth));
-      
-      var percentage = x / self.trackWidth;
-      var value = self.options.min + percentage * (self.options.max - self.options.min);
-      value = self.getSteppedValue(value);
-      
-      // Update value based on active handle
-      if (self.activeHandle === 'left') {
-        self.values[0] = Math.min(value, self.values[1]);
-      } else {
-        self.values[1] = Math.max(value, self.values[0]);
-      }
-      
-      self.updatePositions();
-      self.options.onChange(self.values);
-    };
-
-    this.handleMouseUp = function() {
-      if (!self.activeHandle) return;
-      
-      self.handles[self.activeHandle].classList.remove('active');
-      self.activeHandle = null;
-      
-      document.removeEventListener('mousemove', self.handleMouseMove);
-      document.removeEventListener('touchmove', self.handleMouseMove);
-      document.removeEventListener('mouseup', self.handleMouseUp);
-      document.removeEventListener('touchend', self.handleMouseUp);
-      
-      self.options.onSlideEnd(self.values);
-    };
-    
-    // Track click event
-    this.track.addEventListener('click', function(e) {
-      var rect = self.track.getBoundingClientRect();
-      var x = e.clientX - rect.left;
-      var percentage = x / self.trackWidth;
-      var value = self.options.min + percentage * (self.options.max - self.options.min);
-      value = self.getSteppedValue(value);
-      
-      // Find closest handle
-      var leftDistance = Math.abs(self.values[0] - value);
-      var rightDistance = Math.abs(self.values[1] - value);
-      
-      if (leftDistance <= rightDistance) {
-        self.values[0] = self.getSteppedValue(value);
-      } else {
-        self.values[1] = self.getSteppedValue(value);
-      }
-      
-      self.updatePositions();
-      self.options.onChange(self.values);
-      self.options.onSlideEnd(self.values);
-    });
-  },
-
-  getSteppedValue: function(value) {
-    var step = this.options.step;
-    return Math.round(value / step) * step;
-  },
-
-  updatePositions: function() {
-    var range = this.options.max - this.options.min;
-    
-    // Calculate percentages
-    var leftPercent = ((this.values[0] - this.options.min) / range) * 100;
-    var rightPercent = ((this.values[1] - this.options.min) / range) * 100;
-    
-    // Update handle positions - use left property directly for IE11
-    this.handles.left.style.left = leftPercent + '%';
-    this.handles.right.style.left = rightPercent + '%';
-    
-    // Update fill bar - use left and width properties directly for IE11
-    this.fill.style.left = leftPercent + '%';
-    this.fill.style.width = (rightPercent - leftPercent) + '%';
-    
-    // Update tooltips
-    if (this.tooltips.left) {
-      this.tooltips.left.textContent = this.values[0];
-      this.tooltips.left.style.left = leftPercent + '%';
-    }
-    
-    if (this.tooltips.right) {
-      this.tooltips.right.textContent = this.values[1];
-      this.tooltips.right.style.left = rightPercent + '%';
-    }
-  },
-
-  // Public methods
-  setValues: function(values) {
-    this.values = [
-      Math.max(this.options.min, Math.min(this.options.max, values[0])),
-      Math.max(this.options.min, Math.min(this.options.max, values[1]))
-    ];
-    this.updatePositions();
-  },
-  
-  getValues: function() {
-    return [this.values[0], this.values[1]];
-  },
-  
-  update: function(options) {
-    if (options) {
-      for (var key in options) {
-        if (options.hasOwnProperty(key)) {
-          this.options[key] = options[key];
-        }
-      }
-    }
-    this.updatePositions();
-  }
-};
-
-// Polyfill for Element.matches and Element.closest (for IE11)
-(function() {
-  if (!Element.prototype.matches) {
-    Element.prototype.matches = 
-      Element.prototype.msMatchesSelector || 
-      Element.prototype.webkitMatchesSelector;
-  }
-  
-  if (!Element.prototype.closest) {
-    Element.prototype.closest = function(s) {
-      var el = this;
-      do {
-        if (Element.prototype.matches.call(el, s)) return el;
-        el = el.parentElement || el.parentNode;
-      } while (el !== null && el.nodeType === 1);
-      return null;
-    };
-  }
-})();
-
-/**
- * Modified setupVanillaRangeSlider function to work with your chart
- * Assumes the HTML is already in place
- */
-function setupVanillaRangeSlider(chart) {
-  if (sliderInitialized) return;
-  
-  var sliderElement = document.getElementById('rangeSlider');
-  if (!sliderElement) return;
-  
-  // Calculate min, max, and initial values
-  var minimum = findMin(series.data.x, series2.data.x);
-  var maximum = findMax(series.data.x, series2.data.x);
-  var range = maximum - minimum;
-  var initialMin = Math.round(minimum + range * 0.2);
-  var initialMax = Math.round(maximum - range * 0.2);
-  
-  // Initialize the vanilla range slider with your HTML
-  var slider = new VanillaRangeSlider(sliderElement, {
-    min: minimum,
-    max: maximum,
-    step: 1,
-    values: [initialMin, initialMax],
-    onChange: function(values) {
-      // Update chart zoom while sliding
-      updateChartZoom(values[0], values[1]);
-    },
-    onSlideEnd: function(values) {
-      // Final update after slider movement ends
-      updateChartZoom(values[0], values[1]);
-    }
-  });
-  
-  // Initialize the chart with the initial range
-  sliderInitialized = true;
-  updateChartZoom(initialMin, initialMax);
-  
-  // Make slider available globally for other functions
-  window.zoomSlider = slider;
+@font-face {
+  font-family: "qcs-icons";
+  src: url("~/assets/fonts/honeywell/icons/qcs-icons.eot?jmiv8g");
+  src: url("~/assets/fonts/honeywell/icons/qcs-icons.eot?jmiv8g#iefix")
+      format("embedded-opentype"),
+    url("~/assets/fonts/honeywell/icons/qcs-icons.woff?jmiv8g") format("woff"),
+    url("~/assets/fonts/honeywell/icons/qcs-icons.svg?jmiv8g#qcs-icons")
+      format("svg");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
 }
 
-/**
- * Update the chart zoom range
- */
-function updateChartZoom(min, max) {
-  if (!Chart1) return;
-  
-  var maximum = findMax(series.data.x, series2.data.x);
-  
-  // Update chart axes
-  Chart1.axes.bottom.setMinMax(min, max);
-  Chart1.axes.top.setMinMax(min, max);
-  
-  // Update the information text
-  var infoElement = document.querySelector('.slider-info');
-  if (infoElement) {
-    infoElement.textContent = 'Showing points ' + min + ' to ' + max + ' of ' + maximum;
+@font-face {
+  font-family: "qcs-display-flip-icons";
+  src: url("~/assets/fonts/honeywell/icons/qcs-display-flip-icons.eot?mppyyr");
+  src: url("~/assets/fonts/honeywell/icons/qcs-display-flip-icons.eot?mppyyr#iefix")
+      format("embedded-opentype"),
+    url("~/assets/fonts/honeywell/icons/qcs-display-flip-icons.woff?mppyyr")
+      format("woff"),
+    url("~/assets/fonts/honeywell/icons/qcs-display-flip-icons.svg?mppyyr#qcs-display-flip-icons")
+      format("svg");
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+.svg-icon {
+  display: inline-block;
+  background-repeat: no-repeat;
+  background-image: url("~/assets/fonts/honeywell/icons/qcs-icons-sprite.svg");
+  filter: invert(1);
+  transform: scale(0.7);
+}
+
+[class^="icon-"],
+[class*=" icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: "qcs-icons" !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[class^="user-display-flip-"],
+[class*=" user-display-flip-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: "qcs-display-flip-icons" !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/*
+Section : for new added styles
+*/
+.theme-default-light {
+  .icon-scan {
+    /* background-image: url("../../../images/icons/scanning.svg")*/
+    background: url("~/assets/images/icons/scanning-dark.svg") no-repeat;
   }
-  
-  // Redraw the chart
-  Chart1.draw();
+  .icon-scanner-control {
+    /* background-image: url("../../../images/icons/scanning.svg")*/
+    background: url("~/assets/images/icons/scn-maint-dark.svg") no-repeat;
+  }
+  .icon-offsheet {
+    /* background-image: url("../../../images/icons/scanning.svg")*/
+    background: url("~/assets/images/icons/scn-offsheet-dark.svg") no-repeat;
+  }
+  .hw-logo {
+    background: url("~/assets/images/logos/hw-logo-dark.svg") no-repeat;
+    background-position: left center;
+  }
+}
+.theme-default {
+  .icon-scan {
+    /* background-image: url("../../../images/icons/scanning.svg")*/
+    background: url("~/assets/images/icons/scanning.svg") no-repeat;
+  }
+  .icon-scanner-control {
+    /* background-image: url("../../../images/icons/scanning.svg")*/
+    background: url("~/assets/images/icons/scn-maint.svg") no-repeat;
+  }
+  .icon-offsheet {
+    /* background-image: url("../../../images/icons/scanning.svg")*/
+    background: url("~/assets/images/icons/scn-offsheet.svg") no-repeat;
+  }
+  .hw-logo {
+    background: url("~/assets/images/logos/hw-logo.svg") no-repeat;
+    background-position: left center;
+  }
+}
+
+.icon-doublearrow-up:before {
+  content: "\e974";
+  transform: rotate(270deg);
+  display: inline-block;
+}
+.icon-doublearrow-right:before {
+  content: "\e974";
+}
+.icon-doublearrow-down:before {
+  content: "\e974";
+  transform: rotate(90deg);
+  display: inline-block;
+}
+.icon-doublearrow-left:before {
+  content: "\e974";
+  transform: rotate(180deg);
+  display: inline-block;
+}
+.icon-arrowwithborder-up:before {
+  content: "\e975";
+  transform: rotate(270deg);
+  display: inline-block;
+}
+.icon-arrowwithborder-right:before {
+  content: "\e975";
+}
+.icon-arrowwithborder-down:before {
+  content: "\e975";
+  transform: rotate(90deg);
+  display: inline-block;
+}
+.icon-arrowwithborder-left:before {
+  content: "\e975";
+  transform: rotate(180deg);
+  display: inline-block;
+}
+
+.icon-abort:before {
+  content: "\e900";
+}
+.icon-alert-triangle:before {
+  content: "\e901";
+}
+.icon-bar-graph:before {
+  content: "\e902";
+}
+.icon-bend-limit .path1:before {
+  content: "\e903";
+  color: rgb(0, 0, 0);
+}
+.icon-bend-limit .path2:before {
+  content: "\e904";
+  margin-left: -1em;
+  color: rgb(0, 0, 0);
+}
+.icon-bend-limit .path3:before {
+  content: "\e905";
+  margin-left: -1em;
+  color: rgb(0, 0, 0);
+  opacity: 0.7;
+}
+.icon-color-map:before {
+  content: "\e906";
+}
+.icon-config:before {
+  content: "\e907";
+}
+.icon-copy:before {
+  content: "\e908";
+}
+.icon-different-edit:before {
+  content: "\e909";
+}
+.icon-edit-blue:before {
+  content: "\e90a";
+}
+.icon-edit:before {
+  content: "\e90b";
+}
+.icon-line-graph:before {
+  content: "\e90c";
+}
+.icon-moon:before {
+  content: "\f191";
+}
+.icon-restore:before {
+  content: "\e90e";
+}
+.icon-scale-v2:before {
+  content: "\e90f";
+}
+.icon-shutdown:before {
+  content: "\e910";
+}
+.icon-stats:before {
+  content: "\e911";
+}
+.icon-sun:before {
+  content: "\3124";
+}
+.icon-zoom-in:before {
+  content: "\e913";
+}
+.icon-zoom-out:before {
+  content: "\e914";
+}
+
+.icon-loading:before {
+  content: "\e915";
+}
+/*.icon-uniE901:before {
+  content: "\e916";
+}
+.icon-uniE902:before {
+  content: "\e917";
+}
+.icon-uniE903:before {
+  content: "\e918";
+}
+.icon-uniE904:before {
+  content: "\e919";
+} */
+.icon-range:before {
+  content: "\e91a";
+}
+.icon-offline:before {
+  content: "\e91b";
+}
+.icon-scanning:before {
+  content: "\e91c";
+}
+.icon-maintenance:before {
+  content: "\e91d";
+}
+.icon-offsheet-2:before {
+  content: "\e91e";
+}
+.icon-grid:before {
+  content: "\e91f";
+}
+.icon-history:before {
+  content: "\e920";
+}
+.icon-hybrid:before {
+  content: "\e921";
+}
+.icon-cursor:before {
+  content: "\e922";
+}
+.icon-analysis:before {
+  content: "\e923";
+}
+.icon-diagnostic:before {
+  content: "\e924";
+}
+.icon-monitoring:before {
+  content: "\e925";
+}
+.icon-pinned:before {
+  content: "\e926";
+}
+.icon-recipe:before {
+  content: "\e927";
+}
+/* .icon-unie913:before {
+  content: "\e928";
+}
+.icon-unie914:before {
+  content: "\e929";
+}
+.icon-unie915:before {
+  content: "\e92a";
+}
+.icon-unie916:before {
+  content: "\e92b";
+}
+.icon-unie917:before {
+  content: "\e92c";
+}
+.icon-unie918:before {
+  content: "\e92d";
+}
+.icon-unie919:before {
+  content: "\e92e";
+}
+.icon-unie91A:before {
+  content: "\e92f";
+}
+.icon-unie91B:before {
+  content: "\e930";
+}
+.icon-unie91C:before {
+  content: "\e931";
+}
+.icon-uniE91D:before {
+  content: "\e932";
+}
+.icon-uniE91E:before {
+  content: "\e933";
+} */
+.icon-checkbox:before {
+  content: "\e934";
+}
+.icon-banned:before {
+  content: "\e935";
+}
+.icon-history:before {
+  content: "\e936";
+}
+.icon-sort:before {
+  content: "\e937";
+}
+.icon-selectedcheck1:before {
+  content: "\e938";
+}
+.icon-critical:before {
+  content: "\e939";
+}
+.icon-dashed-circle:before {
+  content: "\e93a";
+}
+.icon-h-ellipsis:before {
+  content: "\e93b";
+}
+.icon-hidden:before {
+  content: "\e93c";
+}
+.icon-important:before {
+  content: "\e93d";
+}
+.icon-information:before {
+  content: "\e93e";
+}
+.icon-no-data:before {
+  content: "\e93f";
+}
+.icon-resize:before {
+  content: "\e940";
+}
+.icon-status-filled:before {
+  content: "\e941";
+}
+.icon-okay:before {
+  content: "\e942";
+}
+.icon-success:before {
+  content: "\e943";
+}
+.icon-tooltip:before {
+  content: "\e944";
+}
+.icon-v-ellipsis:before {
+  content: "\e945";
+}
+.icon-zoom-out:before {
+  content: "\e946";
+}
+.icon-acm:before {
+  content: "\e947";
+}
+.icon-add:before {
+  content: "\e948";
+}
+.icon-alarm:before {
+  content: "\e949";
+}
+.icon-calendar:before {
+  content: "\e94a";
+}
+.icon-caret-down:before {
+  content: "\e94b";
+}
+.icon-caret-left:before {
+  content: "\e94c";
+}
+.icon-caret-right:before {
+  content: "\e94d";
+}
+.icon-caret-up:before {
+  content: "\e94e";
+}
+.icon-close:before {
+  content: "\e94f";
+}
+.icon-dashboard:before {
+  content: "\e950";
+}
+.icon-data-display:before {
+  content: "\e951";
+}
+.icon-dual-profile:before {
+  content: "\e952";
+}
+.icon-dual-trend:before {
+  content: "\e953";
+}
+.icon-event:before {
+  content: "\e954";
+}
+.icon-filter:before {
+  content: "\e955";
+}
+.icon-freeze:before {
+  content: "\e956";
+}
+.icon-help:before {
+  content: "\e957";
+}
+.icon-high-resolution-profile:before {
+  content: "\e958";
+}
+.icon-home:before {
+  content: "\e959";
+}
+.icon-limit-alert:before {
+  content: "\e95a";
+}
+.icon-menu:before {
+  content: "\e95b";
+}
+.icon-mis:before {
+  content: "\e95c";
+}
+.icon-multi-profile:before {
+  content: "\e95d";
+}
+.icon-multi-trend:before {
+  content: "\e95e";
+}
+
+.icon-play:before {
+  content: "\e961";
+}
+.icon-print:before {
+  content: "\e962";
+}
+.icon-profile:before {
+  content: "\e963";
+}
+.icon-quality-summary:before {
+  content: "\e964";
+}
+.icon-radioactive:before {
+  content: "\e965";
+}
+.icon-recipe-change:before {
+  content: "\e966";
+}
+.icon-scale:before {
+  content: "\e967";
+}
+.icon-alarm-filled:before {
+  content: "\e968";
+}
+.icon-search:before {
+  content: "\e969";
+}
+.icon-setting:before {
+  content: "\e96a";
+}
+.icon-sort-unsorted:before {
+  content: "\e96b";
+}
+.icon-stop:before {
+  content: "\e96c";
+}
+.icon-system-status:before {
+  content: "\e96d";
+}
+.icon-table:before {
+  content: "\e96e";
+}
+.icon-status:before {
+  content: "\e96f";
+}
+.icon-alarm-filled-blinking:before {
+  content: "\e970";
+}
+.icon-alarm-line-blinking:before {
+  content: "\e971";
+}
+.icon-alarm-line:before {
+  content: "\e972";
+}
+.icon-download:before {
+  content: "\e973";
+}
+.icon-doublearrow:before {
+  content: "\e974";
+}
+.icon-arrowwithborder:before {
+  content: "\e975";
+}
+
+// User display flip icons
+// .user-display-flip-off:before {
+//   content: "\e976";
+// }
+
+.user-display-flip-on {
+  .path1:before {
+    content: "\e976";
+  }
+
+  .path2:before {
+    content: "\e977";
+    margin-left: -1em;
+  }
+
+  .path3:before {
+    content: "\e978";
+    margin-left: -1em;
+  }
+
+  .path4:before {
+    content: "\e979";
+    margin-left: -1em;
+  }
+}
+
+.user-display-flip-off {
+  .path1:before {
+    content: "\e97b";
+  }
+
+  .path2:before {
+    content: "\e97c";
+    margin-left: -1em;
+  }
+
+  .path3:before {
+    content: "\e97d";
+    margin-left: -1em;
+  }
+
+  .path4:before {
+    content: "\e97e";
+    margin-left: -1em;
+  }
 }
