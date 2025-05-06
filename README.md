@@ -8,7 +8,7 @@
       format("svg");
   font-weight: normal;
   font-style: normal;
-  font-display: block;
+  /* Removed font-display property for IE11 compatibility */
 }
 
 @font-face {
@@ -22,17 +22,50 @@
       format("svg");
   font-weight: normal;
   font-style: normal;
-  font-display: block;
+  /* Removed font-display property for IE11 compatibility */
 }
 
 .svg-icon {
   display: inline-block;
   background-repeat: no-repeat;
   background-image: url("~/assets/fonts/honeywell/icons/qcs-icons-sprite.svg");
-  filter: invert(1);
+  /* Replaced with IE11 compatible filter */
+  -ms-filter: "progid:DXImageTransform.Microsoft.BasicImage(invert=1)";
+  -webkit-transform: scale(0.7);
+  -ms-transform: scale(0.7);
   transform: scale(0.7);
 }
 
+/* Expanded nested selectors for IE11 compatibility */
+.theme-default-light .icon-scan {
+  background: url("~/assets/images/icons/scanning-dark.svg") no-repeat;
+}
+.theme-default-light .icon-scanner-control {
+  background: url("~/assets/images/icons/scn-maint-dark.svg") no-repeat;
+}
+.theme-default-light .icon-offsheet {
+  background: url("~/assets/images/icons/scn-offsheet-dark.svg") no-repeat;
+}
+.theme-default-light .hw-logo {
+  background: url("~/assets/images/logos/hw-logo-dark.svg") no-repeat;
+  background-position: left center;
+}
+
+.theme-default .icon-scan {
+  background: url("~/assets/images/icons/scanning.svg") no-repeat;
+}
+.theme-default .icon-scanner-control {
+  background: url("~/assets/images/icons/scn-maint.svg") no-repeat;
+}
+.theme-default .icon-offsheet {
+  background: url("~/assets/images/icons/scn-offsheet.svg") no-repeat;
+}
+.theme-default .hw-logo {
+  background: url("~/assets/images/logos/hw-logo.svg") no-repeat;
+  background-position: left center;
+}
+
+/* Add vendor prefixes for transforms */
 [class^="icon-"],
 [class*=" icon-"] {
   /* use !important to prevent issues with browser extensions that change fonts */
@@ -65,48 +98,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-/*
-Section : for new added styles
-*/
-.theme-default-light {
-  .icon-scan {
-    /* background-image: url("../../../images/icons/scanning.svg")*/
-    background: url("~/assets/images/icons/scanning-dark.svg") no-repeat;
-  }
-  .icon-scanner-control {
-    /* background-image: url("../../../images/icons/scanning.svg")*/
-    background: url("~/assets/images/icons/scn-maint-dark.svg") no-repeat;
-  }
-  .icon-offsheet {
-    /* background-image: url("../../../images/icons/scanning.svg")*/
-    background: url("~/assets/images/icons/scn-offsheet-dark.svg") no-repeat;
-  }
-  .hw-logo {
-    background: url("~/assets/images/logos/hw-logo-dark.svg") no-repeat;
-    background-position: left center;
-  }
-}
-.theme-default {
-  .icon-scan {
-    /* background-image: url("../../../images/icons/scanning.svg")*/
-    background: url("~/assets/images/icons/scanning.svg") no-repeat;
-  }
-  .icon-scanner-control {
-    /* background-image: url("../../../images/icons/scanning.svg")*/
-    background: url("~/assets/images/icons/scn-maint.svg") no-repeat;
-  }
-  .icon-offsheet {
-    /* background-image: url("../../../images/icons/scanning.svg")*/
-    background: url("~/assets/images/icons/scn-offsheet.svg") no-repeat;
-  }
-  .hw-logo {
-    background: url("~/assets/images/logos/hw-logo.svg") no-repeat;
-    background-position: left center;
-  }
-}
-
 .icon-doublearrow-up:before {
   content: "\e974";
+  -webkit-transform: rotate(270deg);
+  -ms-transform: rotate(270deg);
   transform: rotate(270deg);
   display: inline-block;
 }
@@ -115,16 +110,22 @@ Section : for new added styles
 }
 .icon-doublearrow-down:before {
   content: "\e974";
+  -webkit-transform: rotate(90deg);
+  -ms-transform: rotate(90deg);
   transform: rotate(90deg);
   display: inline-block;
 }
 .icon-doublearrow-left:before {
   content: "\e974";
+  -webkit-transform: rotate(180deg);
+  -ms-transform: rotate(180deg);
   transform: rotate(180deg);
   display: inline-block;
 }
 .icon-arrowwithborder-up:before {
   content: "\e975";
+  -webkit-transform: rotate(270deg);
+  -ms-transform: rotate(270deg);
   transform: rotate(270deg);
   display: inline-block;
 }
@@ -133,15 +134,20 @@ Section : for new added styles
 }
 .icon-arrowwithborder-down:before {
   content: "\e975";
+  -webkit-transform: rotate(90deg);
+  -ms-transform: rotate(90deg);
   transform: rotate(90deg);
   display: inline-block;
 }
 .icon-arrowwithborder-left:before {
   content: "\e975";
+  -webkit-transform: rotate(180deg);
+  -ms-transform: rotate(180deg);
   transform: rotate(180deg);
   display: inline-block;
 }
 
+/* Rest of the icon classes, adding vendor prefixes where needed */
 .icon-abort:before {
   content: "\e900";
 }
@@ -212,21 +218,10 @@ Section : for new added styles
   content: "\e914";
 }
 
+/* The rest of the icon classes remain unchanged */
 .icon-loading:before {
   content: "\e915";
 }
-/*.icon-uniE901:before {
-  content: "\e916";
-}
-.icon-uniE902:before {
-  content: "\e917";
-}
-.icon-uniE903:before {
-  content: "\e918";
-}
-.icon-uniE904:before {
-  content: "\e919";
-} */
 .icon-range:before {
   content: "\e91a";
 }
@@ -269,42 +264,6 @@ Section : for new added styles
 .icon-recipe:before {
   content: "\e927";
 }
-/* .icon-unie913:before {
-  content: "\e928";
-}
-.icon-unie914:before {
-  content: "\e929";
-}
-.icon-unie915:before {
-  content: "\e92a";
-}
-.icon-unie916:before {
-  content: "\e92b";
-}
-.icon-unie917:before {
-  content: "\e92c";
-}
-.icon-unie918:before {
-  content: "\e92d";
-}
-.icon-unie919:before {
-  content: "\e92e";
-}
-.icon-unie91A:before {
-  content: "\e92f";
-}
-.icon-unie91B:before {
-  content: "\e930";
-}
-.icon-unie91C:before {
-  content: "\e931";
-}
-.icon-uniE91D:before {
-  content: "\e932";
-}
-.icon-uniE91E:before {
-  content: "\e933";
-} */
 .icon-checkbox:before {
   content: "\e934";
 }
@@ -434,7 +393,6 @@ Section : for new added styles
 .icon-multi-trend:before {
   content: "\e95e";
 }
-
 .icon-play:before {
   content: "\e961";
 }
@@ -499,49 +457,41 @@ Section : for new added styles
   content: "\e975";
 }
 
-// User display flip icons
-// .user-display-flip-off:before {
-//   content: "\e976";
-// }
-
-.user-display-flip-on {
-  .path1:before {
-    content: "\e976";
-  }
-
-  .path2:before {
-    content: "\e977";
-    margin-left: -1em;
-  }
-
-  .path3:before {
-    content: "\e978";
-    margin-left: -1em;
-  }
-
-  .path4:before {
-    content: "\e979";
-    margin-left: -1em;
-  }
+/* User display flip icons */
+.user-display-flip-on .path1:before {
+  content: "\e976";
 }
 
-.user-display-flip-off {
-  .path1:before {
-    content: "\e97b";
-  }
+.user-display-flip-on .path2:before {
+  content: "\e977";
+  margin-left: -1em;
+}
 
-  .path2:before {
-    content: "\e97c";
-    margin-left: -1em;
-  }
+.user-display-flip-on .path3:before {
+  content: "\e978";
+  margin-left: -1em;
+}
 
-  .path3:before {
-    content: "\e97d";
-    margin-left: -1em;
-  }
+.user-display-flip-on .path4:before {
+  content: "\e979";
+  margin-left: -1em;
+}
 
-  .path4:before {
-    content: "\e97e";
-    margin-left: -1em;
-  }
+.user-display-flip-off .path1:before {
+  content: "\e97b";
+}
+
+.user-display-flip-off .path2:before {
+  content: "\e97c";
+  margin-left: -1em;
+}
+
+.user-display-flip-off .path3:before {
+  content: "\e97d";
+  margin-left: -1em;
+}
+
+.user-display-flip-off .path4:before {
+  content: "\e97e";
+  margin-left: -1em;
 }
