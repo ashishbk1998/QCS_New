@@ -63,3 +63,41 @@
   </ul>
 </div> */
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  var dropdown = document.getElementById('chartDropdown');
+  var dropdownMenu = document.getElementById('chartDropdownMenu');
+  
+  dropdown.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    dropdownMenu.classList.toggle('show');
+  });
+  
+  document.addEventListener('click', function(event) {
+    if (!dropdown.contains(event.target) && !dropdownMenu.contains(event.target)) {
+      dropdownMenu.classList.remove('show');
+    }
+  });
+});
